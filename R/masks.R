@@ -103,6 +103,32 @@ amazonMask <- function(myraster){
   raster::mask(myraster, amazon.sub, progress = "text")
 }
 
+
+#' @title Apply amazon forest mask
+#' @description Apply amazon forest mask.
+#' @param myraster A raster data.
+#' @param legend A tibble legend.
+#' @export
+amazonForestMask <- function(myraster, legend){
+  cat("Applying amazon forest mask\n")
+
+  forestClass <- legend$Short %>% stringr::str_detect("FAMZ") %>% which()
+
+  if (length(forestClass) > 1) {
+    stop("waterMask() cannot be used as there are more than one 'Amazon Forest' classes in the legend")
+  }
+  else if (length(forestClass) == 0) {
+    stop("Could not find any 'Amazon Forest' class in the legend")
+  }
+
+  forestClass <- legend$Value[forestClass]
+
+  forest <- raster::raster(baseDir("masks/forest_2000.tif"))
+  forest.sub <- raster::crop(forest, raster::extent(myraster))
+
+  raster::mask(myraster, forest.sub, maskvalue = 1, updatevalue = forestClass, progress = "text")
+}
+
 #' @title Apply amazon water mask
 #' @description Apply amazon water mask from Perkel et al. (doi:10.1038/nature20584) over a raster, given a legend and an year.
 #' @param myraster A raster.
@@ -115,7 +141,7 @@ amazonWaterMask <- function(myraster, legend) {
     raster::raster() %>%
     raster::crop(raster::extent(myraster))
 
-  waterClass <- legend$Label %>% stringr::str_detect("Water") %>% which()
+  waterClass <- legend$Short %>% stringr::str_detect("WATR") %>% which()
 
   if (length(waterClass) > 1) {
     stop("waterMask() cannot be used as there are more than one 'Water' classes in the legend")
@@ -142,7 +168,7 @@ amazonUrbanMask <- function(myraster, legend, year) {
     raster::raster() %>%
     raster::crop(raster::extent(myraster))
 
-  urbanClass <- legend$Label %>% stringr::str_detect("Urban") %>% which()
+  urbanClass <- legend$Short %>% stringr::str_detect("URBA") %>% which()
 
   if (length(urbanClass) > 1) {
     stop("urbanMask() cannot be used as there are more than one 'Urban' classes in the legend")

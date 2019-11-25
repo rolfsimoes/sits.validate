@@ -23,3 +23,15 @@ applyMask <- function(file) {
 }
 
 processDirectory("post_process_remap", "post_process_masks", applyMask)
+
+# apply amazon forest map for year 2000
+file <- sits.validate::getTifFiles("post_process_remap")[1]
+out_file <- sits.validate::baseDir(paste("post_process_masks", basename(file), sep = "/"))
+file %>%
+  raster::raster() %>%
+  amazonMask() %>%
+  amazonForestMask(legend) %>%
+  amazonUrbanMask(legend, 2000) %>%
+  amazonWaterMask(legend) %>%
+  raster::writeRaster(filename = out_file, overwrite = TRUE,
+                      datatype = raster::dataType(raster::raster(file)))
