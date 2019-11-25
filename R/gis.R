@@ -102,6 +102,11 @@ compareRasters <- function(data, reference){
   referenceRaster <- raster::raster(reference)
   dataRaster <- raster::raster(data)
 
+  # check if rasters have same size
+  if (raster::ncol(referenceRaster) != raster::ncol(dataRaster) ||
+      raster::nrow(referenceRaster) != raster::nrow(dataRaster))
+    stop("Rasters are not the same size.", call. = FALSE)
+
   total <- data.frame()
 
   forEachBlockPair(referenceRaster, dataRaster, function(blockpr, blocksi){
@@ -129,10 +134,10 @@ compareRasters <- function(data, reference){
 }
 
 #' @title Compare two categorical rasters weitghing each class by its area.
-#' @description Compares two categorical rasters with the same projection, 
-#' extent, and resolution. It returns a list made of a confusion matrix, a named 
-#' vector of areas (in the units of the reference raster), a sublist of vectors 
-#' of the superior and inferior confidence intervals (95%), and a sublist of 
+#' @description Compares two categorical rasters with the same projection,
+#' extent, and resolution. It returns a list made of a confusion matrix, a named
+#' vector of areas (in the units of the reference raster), a sublist of vectors
+#' of the superior and inferior confidence intervals (95%), and a sublist of
 #' vectors of the user and producer accuracies.
 #' @param data String with the input data file.
 #' @param reference String with the reference data file.
@@ -147,7 +152,7 @@ compareRasters <- function(data, reference){
 #' ref_file <- tempfile(fileext = ".tif")
 #' writeRaster(dat, dat_file)
 #' writeRaster(ref, ref_file)
-#' compareRasters_area(dat_file, ref_file) 
+#' compareRasters_area(dat_file, ref_file)
 #' }
 compareRasters_area <- function(data, reference){
 
@@ -167,10 +172,10 @@ compareRasters_area <- function(data, reference){
         if (!all(colnames(error_matrix) == rownames(error_matrix)))
             stop("Labels mismatch in error matrix.", call. = FALSE)
         if (unique(dim(error_matrix)) != length(area))
-            stop("Mismatch between error matrix and area vector.", 
+            stop("Mismatch between error matrix and area vector.",
                  call. = FALSE)
         if (!all(names(area) %in% colnames(error_matrix)))
-            stop("Label mismatch between error matrix and area vector.", 
+            stop("Label mismatch between error matrix and area vector.",
                  call. = FALSE)
 
         # Re-order vector elements.
@@ -179,23 +184,23 @@ compareRasters_area <- function(data, reference){
         W <- area/sum(area)
         n <- rowSums(error_matrix)
         if (any(n < 2))
-            stop("Undefined accuracy when there is one or fewer pixels in any predicted class (division by zero).", 
+            stop("Undefined accuracy when there is one or fewer pixels in any predicted class (division by zero).",
                  call. = FALSE)
-        n.mat <- matrix(rep(n, times = ncol(error_matrix)), 
+        n.mat <- matrix(rep(n, times = ncol(error_matrix)),
                         ncol = ncol(error_matrix))
         p <- W * error_matrix / n.mat
         error_adjusted_area_estimate <- colSums(p) * sum(area)
         Sphat_1 <- vapply(1:ncol(error_matrix), function(i){
             sqrt(sum(W^2 * error_matrix[, i]/n * (1 - error_matrix[, i]/n)/(n - 1)))
         }, numeric(1))
-        
+
         SAhat <- sum(area) * Sphat_1
         Ahat_sup <- error_adjusted_area_estimate + 2 * SAhat
         Ahat_inf <- error_adjusted_area_estimate - 2 * SAhat
         Ohat <- sum(diag(p))
         Uhat <- diag(p) / rowSums(p)
         Phat <- diag(p) / colSums(p)
-        
+
         return(
             list(error_matrix = error_matrix, area = area,
                  confint95 = list(superior = Ahat_sup, inferior = Ahat_inf),
@@ -207,8 +212,8 @@ compareRasters_area <- function(data, reference){
     error_matrix <- compareRasters(data = data, reference = reference)
 
     # Get labels' area in the reference map.
-    freq_tab <- reference %>% 
-        raster::raster() %>% 
+    freq_tab <- reference %>%
+        raster::raster() %>%
         raster::freq(useNA = "no") %>%
         as.data.frame(stringsAsFactors = TRUE)
     # Number of pixels times the spatial resolution.
